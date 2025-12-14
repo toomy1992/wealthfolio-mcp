@@ -20,6 +20,8 @@ A Model Context Protocol (MCP) server that integrates with Wealthfolio to provid
 
 ## Installation
 
+### Option 1: Local Development
+
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/toomy1992/Wealthfolio-MCP.git
@@ -42,6 +44,40 @@ A Model Context Protocol (MCP) server that integrates with Wealthfolio to provid
    API_KEY=your_wealthfolio_api_key_here
    API_BASE_URL=https://wealthfolio.labruntipi.io/api/v1
    ```
+
+### Option 2: Docker (Recommended)
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/toomy1992/Wealthfolio-MCP.git
+   cd Wealthfolio-MCP
+   ```
+
+2. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Wealthfolio API key
+   ```
+
+3. **Run with Docker Compose:**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Or build and run manually:**
+   ```bash
+   docker build -t wealthfolio-mcp .
+   docker run -p 8000:8000 --env-file .env wealthfolio-mcp
+   ```
+
+### Option 3: Pre-built Docker Image
+
+Pull the latest release from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/toomy1992/wealthfolio-mcp:latest
+docker run -p 8000:8000 --env-file .env ghcr.io/toomy1992/wealthfolio-mcp:latest
+```
 
 ## Usage
 
@@ -119,6 +155,30 @@ The server integrates with these Wealthfolio API endpoints:
 - `/api/v1/valuations/history` - Historical performance data
 - `/api/v1/holdings/item` - Individual holding details
 
+## CI/CD and Releases
+
+This project uses GitHub Actions for automated building, testing, and releasing.
+
+### Automated Versioning
+
+- Versions start from `0.1.0`
+- Patch versions are automatically incremented on each push to `main`
+- Releases are created automatically with Docker images
+
+### GitHub Actions Workflow
+
+The CI/CD pipeline includes:
+- **Testing**: Runs pytest and linting on all pushes
+- **Docker Build**: Builds and pushes Docker images to GitHub Container Registry
+- **Automated Releases**: Creates GitHub releases with version tags
+
+### Docker Images
+
+Pre-built images are available at:
+```
+ghcr.io/toomy1992/wealthfolio-mcp:latest
+```
+
 ## Development
 
 ### Project Structure
@@ -131,6 +191,10 @@ wealthfolio-mcp/
 ├── config/
 │   └── settings.py         # Configuration management
 ├── tests/                  # Unit and integration tests
+├── .github/
+│   └── workflows/          # GitHub Actions
+├── Dockerfile              # Docker build configuration
+├── docker-compose.yml      # Local development setup
 ├── requirements.txt        # Python dependencies
 ├── .env.example           # Environment template
 └── README.md              # This file
@@ -139,7 +203,35 @@ wealthfolio-mcp/
 ### Running Tests
 
 ```bash
+# Run all tests
 pytest tests/
+
+# Or use the Makefile
+make test
+```
+
+### Development Commands
+
+Use the provided Makefile for common development tasks:
+
+```bash
+make install      # Install dependencies
+make dev          # Run development server
+make test         # Run tests
+make lint         # Run linting
+make format       # Format code
+make docker-build # Build Docker image
+make docker-run   # Run Docker container
+```
+
+### Docker Development
+
+```bash
+# Build locally
+docker build -t wealthfolio-mcp .
+
+# Run with hot reload for development
+docker run -p 8000:8000 -v $(pwd):/app --env-file .env wealthfolio-mcp
 ```
 
 ### Adding New Features
@@ -147,6 +239,8 @@ pytest tests/
 1. Extend the `WealthfolioClient` class in `api_client.py`
 2. Add new endpoints in `mcp_server.py`
 3. Update the README with new functionality
+4. Add tests for new features
+5. Update the Dockerfile if new dependencies are added
 
 ## Troubleshooting
 
@@ -182,10 +276,30 @@ MIT License - see LICENSE file for details.
 - **Discussions**: [GitHub Discussions](https://github.com/toomy1992/Wealthfolio-MCP/discussions)
 - **Wealthfolio Community**: [Discord](https://discord.gg/WDMCY6aPWK)
 
+## Releases and Versioning
+
+This project uses automated semantic versioning starting from `0.1.0`. Each push to the `main` branch automatically:
+
+1. Increments the patch version (e.g., `0.1.0` → `0.1.1`)
+2. Creates a new GitHub release
+3. Builds and pushes Docker images to GitHub Container Registry
+
+### Latest Release
+
+[![GitHub release](https://img.shields.io/github/release/toomy1992/Wealthfolio-MCP.svg)](https://github.com/toomy1992/Wealthfolio-MCP/releases)
+[![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Ftoomy1992%2Fwealthfolio--mcp-blue)](https://github.com/toomy1992/Wealthfolio-MCP/pkgs/container/wealthfolio-mcp)
+
 ## Changelog
 
 ### v0.1.0
 - Initial release
-- Basic portfolio data integration
+- Wealthfolio API integration with real endpoints
+- FastAPI MCP server implementation
+- Docker containerization
 - OpenWebUI compatibility
 - n8n workflow support
+- Automated CI/CD with GitHub Actions
+- Comprehensive test suite
+
+
+# Build with Grok 
