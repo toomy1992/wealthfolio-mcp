@@ -91,16 +91,108 @@ The server will start on `http://127.0.0.1:8000`
 
 ### API Endpoints
 
+#### Portfolio Data Endpoints
+
 - `GET /portfolio` - Get comprehensive portfolio data including accounts, valuations, assets, and historical performance
+  - Uses: `get_accounts()`, `get_latest_valuations()`, `get_assets()`, `get_valuation_history()`, `fetch_portfolio_data()`
+  
+- `GET /accounts` - Get all accounts
+  - Uses: `get_accounts()`
+  
+- `GET /valuations/latest` - Get latest valuations for specified accounts
+  - Query params: `account_ids` (list of account IDs)
+  - Uses: `get_latest_valuations()`
+  
+- `GET /assets` - Get all available assets
+  - Uses: `get_assets()`
+  
+- `GET /valuations/history` - Get historical valuations for a specified account and time period
+  - Query params: `account_id` (default: "TOTAL"), `days` (default: 30)
+  - Uses: `get_valuation_history()`
+  
+- `GET /holdings/item` - Get a specific holding item for an account and asset
+  - Query params: `account_id`, `asset_id`
+  - Uses: `get_holding_item()`
+
+#### System Endpoints
+
 - `POST /sync` - Trigger portfolio synchronization (placeholder for future implementation)
 
 ### Testing the API
 
-Visit `http://127.0.0.1:8000/docs` for interactive API documentation.
+Visit `http://127.0.0.1:8000/docs` for interactive OpenAPI/Swagger documentation with full schema definitions.
 
 Or test with curl:
 ```bash
+# Get portfolio summary
 curl -X GET "http://127.0.0.1:8000/portfolio" -H "accept: application/json"
+
+# Get all accounts
+curl -X GET "http://127.0.0.1:8000/accounts" -H "accept: application/json"
+
+# Get assets
+curl -X GET "http://127.0.0.1:8000/assets" -H "accept: application/json"
+
+# Get valuation history (last 30 days)
+curl -X GET "http://127.0.0.1:8000/valuations/history?account_id=TOTAL&days=30" -H "accept: application/json"
+```
+
+## OpenAPI / Swagger Documentation
+
+The server automatically generates comprehensive OpenAPI 3.0 documentation:
+
+- **Interactive Swagger UI**: http://localhost:8000/docs
+- **OpenAPI JSON Schema**: http://localhost:8000/openapi.json
+
+All endpoints are documented with:
+- Detailed descriptions of what data is fetched
+- Information about which WealthfolioClient methods are used
+- Parameter documentation and defaults
+- Response schemas
+
+## MCP Integration with OpenAPI
+
+This server is designed to work as a universal MCP (Model Context Protocol) server with OpenAPI support:
+
+### Using mcpo Proxy (Recommended)
+
+To expose this MCP server through standard REST/OpenAPI endpoints with the `mcpo` proxy:
+
+```bash
+# Install mcpo
+pip install mcpo
+
+# Run the MCP server through mcpo proxy
+mcpo --host 0.0.0.0 --port 8000 -- uvicorn src.mcp_server:app --host 127.0.0.1 --port 8001
+```
+
+This will:
+- Convert MCP tools to REST endpoints
+- Auto-generate interactive OpenAPI documentation
+- Make the server accessible via standard HTTP
+- Enable integration with OpenWebUI and other platforms
+
+### Docker with mcpo
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install mcpo uv
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY src/ ./src/
+COPY config/ ./config/
+
+ENV API_KEY=${API_KEY}
+ENV API_BASE_URL=${API_BASE_URL}
+
+EXPOSE 8000
+
+CMD ["mcpo", "--host", "0.0.0.0", "--port", "8000", "--", "uvicorn", "src.mcp_server:app", "--host", "127.0.0.1", "--port", "8001"]
 ```
 
 ## OpenWebUI Integration
