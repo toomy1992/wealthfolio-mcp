@@ -124,12 +124,20 @@ async def get_holding_item(
     
     Uses: `get_holding_item()` from WealthfolioClient
     
+    **Important:** Use the account **UUID** (from `GET /accounts` -> `id` field), NOT the account name.
+    
+    Example:
+    - Account UUID from GET /accounts: "40d73b4b-a731-467c-ae5b-657bea8e52643"
+    - Asset ID: "VHYL.GB"
+    - Correct request: `/holdings/item?account_id=40d73b4b-a731-467c-ae5b-657bea8e52643&asset_id=VHYL.GB`
+    - ❌ WRONG: `/holdings/item?account_id=Boś&asset_id=VHYL.GB` (account name instead of UUID)
+    
     Args:
-        account_id: The account ID containing the holding
-        asset_id: The asset ID of the holding
+        account_id: The account UUID (unique identifier from GET /accounts -> id field). Must be UUID format, NOT account name
+        asset_id: The asset ID/symbol (e.g., "VHYL.GB", "AAPL", "BTC")
         
     Returns:
-        Dictionary with holding item details from Wealthfolio API, or None if not found
+        Dictionary with holding item details from Wealthfolio API, or 404 error if not found
     """
     try:
         result = await client.get_holding_item(account_id=account_id, asset_id=asset_id)
@@ -233,6 +241,33 @@ This server is designed to work seamlessly with:
     openapi_schema["info"]["x-logo"] = {
         "url": "https://wealthfolio.io/assets/logo.png"
     }
+    
+    # Enhance /holdings/item endpoint parameters with clear documentation
+    if "paths" in openapi_schema and "/holdings/item" in openapi_schema["paths"]:
+        holdings_item_path = openapi_schema["paths"]["/holdings/item"]
+        if "get" in holdings_item_path:
+            holdings_item_get = holdings_item_path["get"]
+            # Update parameter descriptions to make it clear UUID should be used
+            if "parameters" in holdings_item_get:
+                for param in holdings_item_get["parameters"]:
+                    if param["name"] == "account_id":
+                        param["description"] = "Account UUID (from GET /accounts -> id field). MUST be UUID, NOT account name. Example: '40d73b4b-a731-467c-ae5b-657bea8e52643'"
+                        param["example"] = "40d73b4b-a731-467c-ae5b-657bea8e52643"
+                        param["schema"] = {"type": "string", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"}
+                    elif param["name"] == "asset_id":
+                        param["description"] = "Asset ID/symbol (e.g., 'VHYL.GB', 'AAPL', 'BTC')"
+                        param["example"] = "VHYL.GB"
+    
+    # Also enhance /valuations/latest endpoint to clarify account IDs
+    if "paths" in openapi_schema and "/valuations/latest" in openapi_schema["paths"]:
+        valuations_path = openapi_schema["paths"]["/valuations/latest"]
+        if "get" in valuations_path:
+            valuations_get = valuations_path["get"]
+            if "parameters" in valuations_get:
+                for param in valuations_get["parameters"]:
+                    if param["name"] == "account_ids":
+                        param["description"] = "List of account UUIDs (from GET /accounts -> id field). Must be UUIDs, NOT account names"
+                        param["example"] = ["40d73b4b-a731-467c-ae5b-657bea8e52643"]
     
     app.openapi_schema = openapi_schema
     return app.openapi_schema
