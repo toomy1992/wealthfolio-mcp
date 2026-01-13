@@ -8,16 +8,80 @@ This document explains the architecture, integration patterns, and how to use th
 
 ---
 
+## Development Workflow for Agents
+
+### Contributing Changes
+
+When making changes to this project, all agents (AI or otherwise) must follow this workflow:
+
+1. **Create Feature Branch**
+   ```bash
+   git checkout -b feature/description-of-change
+   # or
+   git checkout -b fix/description-of-bug
+   ```
+
+2. **Follow Conventional Commits**
+   - `feat:` - New features (bumps MINOR version)
+   - `fix:` - Bug fixes (bumps PATCH version)
+   - `BREAKING CHANGE:` - Breaking changes (bumps MAJOR version)
+   
+   **Examples:**
+   ```
+   feat(api): add new endpoint for sector analysis
+   fix(client): resolve null valuation handling
+   docs(readme): update installation instructions
+   chore(deps): upgrade fastapi dependency
+   ```
+
+3. **Submit Pull Request**
+   - Create PR from feature branch to `main`
+   - Use descriptive title and description
+   - Link to any related issues
+   - Ensure tests pass and linting succeeds
+
+4. **Merge and Release**
+   - PR review and approval
+   - Merge to main triggers CI/CD pipeline
+   - Pipeline analyzes Conventional Commits
+   - Automatic version bump (MAJOR.MINOR.PATCH)
+   - Docker image tagged with version
+   - Release created with changelog
+
+### Automated Version Management
+
+The CI/CD workflow automatically determines version increments:
+
+```
+Commit message with "BREAKING CHANGE:" → v1.0.0 → v2.0.0 (MAJOR)
+Commit message with "feat:" prefix     → v1.0.0 → v1.1.0 (MINOR)
+Commit message with "fix:" prefix      → v1.0.0 → v1.0.1 (PATCH)
+```
+
+### Docker Image Versioning
+
+Docker images are tagged with the exact semantic version:
+- ✅ `ghcr.io/toomy1992/wealthfolio-mcp:v1.0.0`
+- ❌ `ghcr.io/toomy1992/wealthfolio-mcp:latest` (deprecated)
+
+Pull the correct version:
+```bash
+docker pull ghcr.io/toomy1992/wealthfolio-mcp:v1.0.0
+```
+
+---
+
 ## Table of Contents
 
-1. [Architecture](#architecture)
-2. [MCP Protocol Support](#mcp-protocol-support)
-3. [OpenAPI Integration](#openapi-integration)
-4. [Integration Patterns](#integration-patterns)
-5. [Available Tools/Functions](#available-toolsfunctions)
-6. [Example Agent Workflows](#example-agent-workflows)
-7. [Deployment Patterns](#deployment-patterns)
-8. [Security & Authentication](#security--authentication)
+1. [Development Workflow for Agents](#development-workflow-for-agents)
+2. [Architecture](#architecture)
+3. [MCP Protocol Support](#mcp-protocol-support)
+4. [OpenAPI Integration](#openapi-integration)
+5. [Integration Patterns](#integration-patterns)
+6. [Available Tools/Functions](#available-toolsfunctions)
+7. [Example Agent Workflows](#example-agent-workflows)
+8. [Deployment Patterns](#deployment-patterns)
+9. [Security & Authentication](#security--authentication)
 
 ---
 
