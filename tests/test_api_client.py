@@ -1,4 +1,5 @@
 import pytest
+import httpx
 from unittest.mock import AsyncMock, patch
 from src.api_client import WealthfolioClient
 
@@ -94,3 +95,107 @@ class TestWealthfolioClient:
             assert result["valuations"] == []
             assert result["assets"] == []
             assert result["history"] == []
+
+    @pytest.mark.asyncio
+    async def test_get_holding_item_success(self, client):
+        """Test successful holding item retrieval"""
+        mock_response = {
+            "accountId": "acc1",
+            "assetId": "AAPL",
+            "quantity": 100,
+            "purchasePrice": 150.00,
+            "currentPrice": 170.00,
+            "totalValue": 17000.00,
+            "costBasis": 15000.00,
+            "gainLoss": 2000.00
+        }
+
+        with patch.object(client, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.return_value = mock_response
+
+            result = await client.get_holding_item("acc1", "AAPL")
+
+            assert result == mock_response
+            mock_request.assert_called_once_with("/holdings/item", {"accountId": "acc1", "assetId": "AAPL"})
+
+    @pytest.mark.asyncio
+    async def test_get_holding_item_not_found(self, client):
+        """Test holding item not found returns None"""
+        with patch.object(client, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.side_effect = httpx.HTTPStatusError(
+                "Not Found", request=None, response=httpx.Response(404)
+            )
+
+            result = await client.get_holding_item("acc1", "INVALID")
+
+            assert result is None
+            mock_request.assert_called_once_with("/holdings/item", {"accountId": "acc1", "assetId": "INVALID"})
+
+    @pytest.mark.asyncio
+    async def test_get_holdings_bulk_success(self, client):
+        """Test successful bulk holdings retrieval"""
+        account_ids = ["acc1", "acc2"]
+        mock_response = [
+            {
+                "accountId": "acc1",
+                "assetId": "AAPL",
+                "quantity": 100,
+                "purchasePrice": 150.00,
+                "currentPrice": 170.00,
+                "totalValue": 17000.00
+            }
+        ]
+
+        with patch.object(client, '_make_request', new_callable=AsyncMock) as mock_request:
+            mock_request.return_value = mock_response
+
+            result = await client.get_holdings(account_ids)
+
+            assert result == mock_response
+            mock_request.assert_called_once_with("/holdings", {"accountIds[]": account_ids})
+
+    @pytest.mark.asyncio
+    async def test_get_holdings_fallback(self, client):
+        """Test holdings fallback when bulk endpoint fails"""
+        account_ids = ["acc1"]
+
+        # Mock assets response
+        mock_assets = [
+            {"id": "AAPL", "type": "stock"},
+            {"id": "CASH", "type": "CASH"},  # Should be filtered out
+            {"id": "EUR", "type": "FOREX"}   # Should be filtered out
+        ]
+
+        # Mock holding response for AAPL
+        mock_holding = {
+            "accountId": "acc1",
+            "assetId": "AAPL",
+            "quantity": 100,
+            "purchasePrice": 150.00,
+            "currentPrice": 170.00,
+            "totalValue": 17000.00
+        }
+
+        with patch.object(client, '_make_request', new_callable=AsyncMock) as mock_request, \
+             patch.object(client, 'get_assets', new_callable=AsyncMock) as mock_get_assets, \
+             patch.object(client, 'get_holding_item', new_callable=AsyncMock) as mock_get_holding:
+
+            # Bulk endpoint fails with 404
+            mock_request.side_effect = httpx.HTTPStatusError(
+                "Not Found", request=None, response=httpx.Response(404)
+            )
+            mock_get_assets.return_value = mock_assets
+            mock_get_holding.return_value = mock_holding
+
+            result = await client.get_holdings(account_ids)
+
+            assert len(result) == 1
+            assert result[0] == mock_holding
+            # Should call get_holding_item for AAPL only (CASH and FOREX filtered out)
+            mock_get_holding.assert_called_once_with("acc1", "AAPL")
+
+    @pytest.mark.asyncio
+    async def test_get_holdings_empty_accounts(self, client):
+        """Test get_holdings with empty account list"""
+        result = await client.get_holdings([])
+        assert result == []
