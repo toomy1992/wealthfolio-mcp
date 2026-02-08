@@ -77,11 +77,25 @@ class WealthfolioClient:
 
     async def _get_holdings_fallback(self, account_ids: List[str]) -> List[Dict[str, Any]]:
         """Fallback method to fetch holdings individually if bulk endpoint unavailable"""
-        # Note: This fallback is expensive and may hit rate limits
-        # For production, consider caching or using a different approach
-        # For now, return empty list to avoid excessive API calls
-        print("Bulk holdings endpoint not available, skipping holdings fetch to avoid rate limits")
-        return []
+        # Get all assets first
+        assets = await self.get_assets()
+        # Filter out non-investable assets (cash, forex)
+        investable_assets = [asset for asset in assets if asset.get("type") not in ["CASH", "FOREX"]]
+
+        tasks = []
+        for account_id in account_ids:
+            for asset in investable_assets:
+                tasks.append(self.get_holding_item(account_id, asset["id"]))
+
+        # Execute all requests concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        holdings = []
+        for result in results:
+            if isinstance(result, dict) and result is not None:
+                holdings.append(result)
+
+        return holdings
 
     async def fetch_portfolio_data(self, filters: dict) -> Dict[str, Any]:
         """Fetch comprehensive portfolio data with detailed holdings"""

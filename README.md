@@ -135,7 +135,12 @@ curl -X GET "http://127.0.0.1:8000/assets" -H "accept: application/json"
 
 # Get valuation history (last 30 days)
 curl -X GET "http://127.0.0.1:8000/valuations/history?account_id=TOTAL&days=30" -H "accept: application/json"
+
+# Get holdings for specific accounts
+curl -X GET "http://127.0.0.1:8000/holdings?account_ids=acc1&account_ids=acc2" -H "accept: application/json"
 ```
+
+This detailed holdings data enables AI agents to perform accurate portfolio rebalancing by calculating exact share quantities, cost basis, and unrealized gains/losses.
 
 ## OpenAPI / Swagger Documentation
 
@@ -382,6 +387,14 @@ This project uses automated semantic versioning starting from `0.1.0`. Each push
 [![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Ftoomy1992%2Fwealthfolio--mcp-blue)](https://github.com/toomy1992/Wealthfolio-MCP/pkgs/container/wealthfolio-mcp)
 
 ## Changelog
+
+### v0.2.0
+- Added detailed holdings data for accurate rebalancing calculations
+- Implemented holdings fallback fetching when bulk endpoint unavailable
+- Enhanced portfolio endpoint with comprehensive holdings information
+- Added concurrent API fetching for improved performance
+- Expanded test coverage for holdings functionality
+- Updated documentation with anonymized holdings examples
 
 ### v0.1.0
 - Initial release
