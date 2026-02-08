@@ -238,6 +238,7 @@ The server exposes these **MCP-compatible tools**:
 | `get_latest_valuations` | `/valuations/latest` | GET | Get current valuations |
 | `get_valuation_history` | `/valuations/history` | GET | Get historical data |
 | `get_holding_item` | `/holdings/item` | GET | Get specific holdings |
+| `get_holdings` | `/holdings` | GET | Get all holdings for accounts |
 | `fetch_portfolio_data` | `/portfolio` | GET | Comprehensive portfolio data |
 | `sync_portfolio` | `/sync` | POST | Trigger synchronization |
 
@@ -475,7 +476,28 @@ mcpo --host 0.0.0.0 --port 8000 -- uvicorn src.mcp_server:app --host 127.0.0.1 -
 }
 ```
 
-### 6. Get Portfolio (Aggregate)
+### 6. Get Holdings
+**Endpoint:** `GET /holdings?account_ids=acc1,acc2`  
+**MCP Tool:** `get_holdings(account_ids)`  
+**Client Method:** `client.get_holdings(account_ids)`
+
+```python
+# Detailed holdings for specified accounts
+[
+    {
+        "accountId": "acc1",
+        "assetId": "AAPL",
+        "quantity": 100,
+        "purchasePrice": 150.00,
+        "currentPrice": 170.00,
+        "totalValue": 17000.00,
+        "costBasis": 15000.00,
+        "gainLoss": 2000.00
+    }
+]
+```
+
+### 7. Get Portfolio (Aggregate)
 **Endpoint:** `GET /portfolio`  
 **MCP Tool:** `fetch_portfolio_data()`  
 **Client Methods:** Uses all above methods
@@ -487,6 +509,7 @@ mcpo --host 0.0.0.0 --port 8000 -- uvicorn src.mcp_server:app --host 127.0.0.1 -
     "valuations": [...],
     "assets": [...],
     "history": [...],
+    "holdings": [...],  # NEW: Detailed holdings data
     "summary": {
         "total_value": 150000.00,
         "total_cost": 120000.00,
@@ -521,31 +544,33 @@ mcpo --host 0.0.0.0 --port 8000 -- uvicorn src.mcp_server:app --host 127.0.0.1 -
 User: "Analyze my portfolio and tell me where I should rebalance"
 
 Agent Actions:
-1. Call /portfolio → Get comprehensive portfolio data
+1. Call /portfolio → Get comprehensive portfolio data including holdings
 2. Call /valuation_history?days=90 → Get 3-month trend
 3. Call /assets → Get available assets
 4. Analyze data:
-   - Calculate sector allocation
+   - Calculate current allocation from holdings data
    - Identify underperforming assets
    - Compare to risk tolerance
-5. Recommend rebalancing actions
+5. Recommend rebalancing actions with specific quantities
 ```
 
 **Example Agent Prompt:**
 ```
-You are a financial advisor. You have access to portfolio data via the Wealthfolio MCP server.
-User asked: "Analyze my portfolio"
+You are a financial advisor. You have access to detailed portfolio data via the Wealthfolio MCP server.
+User asked: "Analyze my portfolio and suggest rebalancing"
 
 Available tools:
-- get_portfolio() - Get complete portfolio with all accounts and valuations
+- get_portfolio() - Get complete portfolio with holdings, accounts, and valuations
 - get_valuation_history(days=30) - Get historical performance
+- get_holdings(account_ids) - Get detailed position information
 - get_accounts() - List all accounts
 
 Steps:
-1. Fetch portfolio data
-2. Analyze allocation
-3. Compare to benchmarks
-4. Provide recommendations
+1. Fetch portfolio data with holdings
+2. Calculate current asset allocation percentages
+3. Compare with target allocation
+4. Calculate required buys/sells for rebalancing
+5. Provide specific recommendations
 ```
 
 ### Workflow 2: Daily Portfolio Report
@@ -968,6 +993,13 @@ This project is open source. See LICENSE file for details.
 ---
 
 ## Version History
+
+- **v1.1.0** (2026-02-08)
+  - Added detailed holdings data to portfolio responses
+  - New `/holdings` endpoint for bulk holdings queries
+  - Enhanced rebalancing capabilities for agents
+  - Concurrent API fetching for improved performance
+  - Backward compatible with existing integrations
 
 - **v1.0.0** (2026-01-11)
   - Initial release with OpenAPI support
