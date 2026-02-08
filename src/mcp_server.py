@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException
+import asyncio
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.openapi.utils import get_openapi
 from src.api_client import WealthfolioClient
 from config.settings import settings
@@ -149,28 +150,58 @@ async def get_holding_item(
 
 
 @app.get(
+    "/holdings",
+    tags=["Portfolio Data"],
+    summary="Get all holdings for specified accounts",
+    responses={200: {"description": "List of all holdings across specified accounts"}},
+)
+async def get_holdings(account_ids: List[str] = Query(...)) -> List[Dict[str, Any]]:
+    """
+    Get all holdings for specified accounts.
+
+    This endpoint fetches detailed holding information including quantities,
+    costs, and current values for each position.
+
+    Uses: `get_holdings()` from WealthfolioClient
+
+    Args:
+        account_ids: List of account IDs to fetch holdings for
+
+    Returns:
+        List of holding dictionaries with detailed position information
+    """
+    try:
+        return await client.get_holdings(account_ids)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching holdings: {str(e)}")
+
+
+@app.get(
     "/portfolio",
     tags=["Portfolio Data"],
-    summary="Get comprehensive portfolio data",
-    responses={200: {"description": "Complete portfolio information with accounts, valuations, assets, and summary"}},
+    summary="Get comprehensive portfolio data with detailed holdings",
+    responses={200: {"description": "Complete portfolio information including detailed holdings"}},
 )
 async def get_portfolio() -> Dict[str, Any]:
     """
-    Fetch comprehensive portfolio data including all accounts, valuations, assets, and calculated summary.
-    
+    Fetch comprehensive portfolio data including all accounts, valuations, assets,
+    historical data, and detailed holdings information.
+
     This is the main aggregation endpoint that uses multiple WealthfolioClient methods:
     - `get_accounts()` - Fetches all accounts
     - `get_latest_valuations()` - Gets current valuations for all accounts
     - `get_assets()` - Retrieves all available assets
     - `get_valuation_history()` - Gets historical data (last 30 days)
+    - `get_holdings()` - Gets detailed holdings for all accounts (NEW)
     - `fetch_portfolio_data()` - Aggregates all data with calculated totals
-    
+
     Returns:
         Dictionary containing:
         - accounts: List of all accounts
         - valuations: Latest valuations for each account
         - assets: All available assets
         - history: Historical valuation data
+        - holdings: Detailed holdings with quantities and costs (NEW)
         - summary: Calculated summary with totals, gains/losses, and percentages
     """
     try:
