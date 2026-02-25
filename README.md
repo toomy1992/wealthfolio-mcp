@@ -1,3 +1,6 @@
+# With Wealthfolio 3.0 build in AI this Repo become obsolete
+
+
 # Wealthfolio MCP Server
 
 A Model Context Protocol (MCP) server that integrates with Wealthfolio to provide portfolio data, valuations, and analytics to OpenWebUI and other MCP-compatible applications.
